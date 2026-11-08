@@ -7,6 +7,12 @@ PORT="${PORT:-8080}"
 DB_DIR="${ROUNDCUBEMAIL_DB_DIR:-/var/roundcube/db}"
 CFG_DIR=/var/roundcube/config
 
+# --- one Apache MPM ------------------------------------------------------------------------------------------
+# The upstream image runs `a2dismod mpm_event` in a later layer. Railway ignores that whiteout, so mpm_event comes
+# back beside mpm_prefork and Apache dies with "AH00534: More than one MPM loaded". Disable the others at boot.
+a2dismod -f mpm_event mpm_worker >/dev/null 2>&1 || true
+a2enmod mpm_prefork >/dev/null 2>&1 || true
+
 # --- Apache follows Railway's PORT ---------------------------------------------------------------------------
 sed -i "s/^Listen 80\$/Listen ${PORT}/" /etc/apache2/ports.conf
 sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
